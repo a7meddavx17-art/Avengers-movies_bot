@@ -7,7 +7,23 @@ TOKEN = os.environ["TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 FILE = "seen.json"
 
-html = requests.get(URL, timeout=20, headers={"User-Agent": "Mozilla/5.0"}).text
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+html = None
+for _ in range(3):
+    try:
+        html = requests.get(URL, timeout=40, headers=headers).text
+        break
+    except requests.RequestException as e:
+        print("محاولة فشلت:", e)
+
+if html is None:
+    sys.exit("الموقع مردش")
+
 soup = BeautifulSoup(html, "html.parser")
 
 SKIP = {"whatson", "comingsoon", "advance-sales", "experiences"}
