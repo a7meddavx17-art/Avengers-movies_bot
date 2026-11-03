@@ -1,3 +1,15 @@
+import requests, json, os, sys
+from urllib.parse import urljoin
+from bs4 import BeautifulSoup
+
+URL = "https://egy.voxcinemas.com/movies/whatson"
+TOKEN = os.environ["TOKEN"]
+CHAT_ID = os.environ["CHAT_ID"]
+FILE = "seen.json"
+
+html = requests.get(URL, timeout=20, headers={"User-Agent": "Mozilla/5.0"}).text
+soup = BeautifulSoup(html, "html.parser")
+
 SKIP = {"whatson", "comingsoon", "advance-sales", "experiences"}
 
 movies = {}
@@ -11,3 +23,20 @@ for a in soup.select('a[href*="/movies/"]'):
     name = a.get("title") or a.get_text(strip=True)
     if name and href not in movies:
         movies[href] = name
+
+print("لقيت", len(movies), "فيلم")
+
+if not movies:
+    sys.exit("مفيش أفلام اتقرأت")
+
+seen = set(json.load(open(FILE))) if os.path.exists(FILE) else None
+
+if seen is not None:
+    for href in movies.keys() - seen:
+        requests.get(
+            f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+            params={"chat_id": CHAT_ID,
+                    "text": f"فيلم جديد نزل: {movies[href]}\n{urljoin(URL, href)}"},
+        )
+
+json.dump(sorted((seen or set()) | set(movies)), open(FILE, "w"), ensure_ascii=False)
